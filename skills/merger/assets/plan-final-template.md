@@ -1,7 +1,7 @@
 <!-- RFC-META (machine state — do not render; orchestrator reads/writes the status: line here)
 project: {project-name}
 trace_id: {uuid}
-scenario_version: 1.3
+scenario_version: 1.4
 plan_version: v1
 status: CONSOLIDATED_PENDING_SECURITY
 last_updated: {ISO 8601}
@@ -16,7 +16,7 @@ last_updated_by: Merger
 | **Owner** | {{owning team — e.g. Talent Acquisition}} |
 | **Submitted Date** | {{ISO date}} |
 | **Approver** | {{tech leads by name; the Infosec approver is filled by the Infosec Reviewer on approval}} |
-| **Related Documents** | PRD: {{link}}; {{spokes / other refs, or N/A}} |
+| **Related Documents** | PRD: {{link}}; {{spokes / other refs, or N/A (N/A requires a one-line justification)}} |
 
 ## 1. Overview
 
@@ -36,7 +36,7 @@ boundary here and name which need a sibling RFC.}}
 
 ### Related Documents
 
-{{PRD + any spoke/design docs, or N/A.}}
+{{PRD + any spoke/design docs, or N/A (N/A requires a one-line justification).}}
 
 ### Assumptions
 
@@ -44,7 +44,7 @@ boundary here and name which need a sibling RFC.}}
 
 ### Dependencies
 
-{{Upstream/downstream systems, teams, or services this work depends on, or N/A.}}
+{{Upstream/downstream systems, teams, or services this work depends on, or N/A (N/A requires a one-line justification).}}
 
 ### PRD Requirement Coverage
 
@@ -68,10 +68,13 @@ boundary here and name which need a sibling RFC.}}
 #### Cons of This Architecture
 - {{specific cost / risk}}
 
+**Why rejected:** {{specific, quantified — required on every non-chosen option; omit only on the chosen one}}
+
 ### {{Second option name — e.g. "Optional Path using X"}}
 
-{{Repeat Pros / Cons. Include every option seriously considered; at minimum the
-chosen one. Delete extra option blocks if only one was viable, but say why.}}
+{{Repeat Pros / Cons, and `Why rejected: <specific, quantified>` for each non-chosen
+option. Include every option seriously considered; at minimum the chosen one. Delete
+extra option blocks if only one was viable, but say why.}}
 
 ### Recommendation for MVP
 
@@ -124,11 +127,11 @@ sequenceDiagram
 
 ### Monitoring & Alerting
 
-{{Key metrics, dashboards, alarm thresholds, or N/A.}}
+{{Key metrics, dashboards, alarm thresholds, or N/A (N/A requires a one-line justification).}}
 
 ### Logging
 
-{{What is logged, retention, PII handling, or N/A.}}
+{{What is logged, retention, PII handling, or N/A (N/A requires a one-line justification).}}
 
 ### Security Implications
 
@@ -138,7 +141,7 @@ Outcome here in Phase 4.}}
 
 ### Cost Estimation
 
-{{Infra / operational cost estimate, or N/A.}}
+{{Infra / operational cost estimate (including the HoE effort estimate with its assumptions and range), or N/A (N/A requires a one-line justification).}}
 
 ## 4. Backwards Compatibility and Rollout Plan
 
@@ -169,13 +172,18 @@ bury blockers — this is where reviewers look first.}}
 
 ## 6. Tasks
 
+> Test strategy: `test_cases.md` (same directory) is the source of truth for acceptance test coverage of these tasks.
+
 | PRD Story | Task (descriptive title) | Description Task | Status |
 |---|---|---|---|
 | {{US1 — Candidate Index}} | {{Indexing service}} | {{What this task builds / changes}} | {{To Do}} |
 | {{US2 — Faceted Search}} | {{Query service & search API}} | {{}} | {{[BLOCKED: <reason>]}} |
 
-## 7. Comment logs
+## 7. Sign-off & decision log
 
-| Date | Comment(s) From | Action Item(s) |
-|---|---|---|
-|  |  |  |
+> Records gate decisions (draft approved, security verdict, final approval) — human-facing.
+> No reviewer chatter here; that lives in `merge_report.md`.
+
+| Date | Role | Decision | Notes |
+|---|---|---|---|
+|  |  |  |  |

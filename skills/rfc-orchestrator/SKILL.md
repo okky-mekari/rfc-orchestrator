@@ -1,17 +1,24 @@
 ---
-name: rfc-orchestration
+name: rfc-orchestrator
 description: The full RFC development lifecycle orchestration protocol — PRD ingestion through architectural design, parallel review, synthesis, security clearance, and optional implementation. Load when running or resuming an RFC cycle that coordinates the tech-architect, hoe, qa-gatekeeper, merger, infosec, and implementor subagents, including the user-gated Phase 1.5 and 4.5 reviews. The main session acts as Orchestrator and dispatches specialists via the Task tool.
 ---
 
 # Scenario: RFC Development Cycle
 
-**scenario_version:** `1.3`
+**scenario_version:** `1.4`
 **Pinning:** the orchestrator records this `scenario_version` in the first `debug.json` event of every cycle.
 
 > Full lifecycle from PRD ingestion through security clearance.
 > Implementation is **opt-in** — the cycle's default deliverable is an approved RFC, not running code.
 >
-> **What's new in 1.3:**
+> **What's new in 1.4:**
+> * **Phase 2 lost-update race fixed:** HoE and QA no longer write `debug.json`. Each appends to its own event file (`hoe_events.json` / `qa_events.json`); the Orchestrator — sole `debug.json` writer in Phase 2 — folds both into `debug.json` in timestamp order during Inter-Phase Validation.
+> * **Phase 2 verdicts:** each reviewer hands back `review_status: APPROVED | CHANGES_REQUIRED | REJECTED`. Either reviewer REJECTED → Tech Architect Revision Mode (budget: 2 review-rejection cycles).
+> * **Impossible internal subagent gates removed** (Phase 1 Step 6; Revision Mode R3) — subagents have no user turns; the only Phase-1 review is the Orchestrator-owned 1.5 gate.
+> * **Phase 5 gates are Orchestrator-owned:** the Orchestrator presents each task, logs `task_proposed`/`task_approved`, and dispatches the Implementor one task at a time; the Implementor logs `task_started`/`task_completed`.
+> * **Anti-Hallucination Rules** (all phases), a **PRD Quality Check** in Phase 1, and a **`status` command** at gates.
+>
+> **Carried over from 1.3:**
 > * **Hard turn-boundary enforcement at human gates (1.5 and 4.5).** The Orchestrator's presentation of a human gate MUST be the final action of its turn. Dispatching the next phase in the same turn as the gate presentation is a critical violation.
 > * **Defensive precondition checks** required at the start of Phases 2, 3, 4, and 5. Subagents refuse to run if the preceding gate's approval event is missing from `debug.json`.
 > * **Anti-fabrication rule:** the Orchestrator MUST NOT log `initial_review_approved`, `implementation_invoked`, or other user-decision events without an actual user message containing the routing input.
@@ -103,12 +110,22 @@ The Orchestrator MUST NOT log any of the following events unless they correspond
 * `implementation_invoked` (Phase 4.5)
 * `implementation_skipped` (Phase 4.5 — only on explicit `done` / `RFC only` / etc.)
 * `revision_requested` (Phase 4.5)
+* `task_approved` (Phase 5 per-task gate — NEW in 1.4)
 
 If you find yourself about to log one of these and the previous turn was your own (the Orchestrator's), STOP. You are about to fabricate a user decision. Re-present the gate and end your turn.
 
 ### Defensive backstop
 
 Even if the Orchestrator fails to honor this rule, the subagents in Phases 2, 3, 4, and 5 are required to perform a precondition check (see each phase below) and will refuse to run if the appropriate user-approval event is missing from `debug.json`. This is a safety net, not a substitute.
+
+---
+
+## Anti-Hallucination Rules (all phases — NEW in 1.4)
+
+* Every design claim in `PLAN.md` / `PLAN_FINAL.md` must trace to `prd_snapshot.md` (using the PRD's own labels) or to a cited source.
+* Unknowns go to Open Questions as `TBD:` entries — never invented.
+* No fabricated metrics, SLAs, API names, CVEs, or org standards. Org standards must be named with a source or explicitly marked `assumption`.
+* Reviewers must cite the section of the document each finding responds to.
 
 ---
 
@@ -126,8 +143,6 @@ Even if the Orchestrator fails to honor this rule, the subagents in Phases 2, 3,
 | 4 | `infosec.md` | `infosec` / `Infosec Reviewer` | once per consolidation; repeats up to retry budget |
 | 4.5 | *no subagent — Orchestrator presents, then ENDS TURN* | `Orchestrator` | once per APPROVED cycle |
 | 5 | `implementor.md` | `implementor` / `Implementor` | only if explicitly invoked at Phase 4.5 |
-
-> ⚠️ Consistency check: your uploaded files used `implementator.md` as the filename while the role is `Implementor`. Standardize filename, `name`, and every reference to one spelling (`implementor` recommended) so the `Task` `subagent_type` resolves.
 
 ---
 
@@ -193,6 +208,7 @@ The default end state is a **security-approved `PLAN_FINAL.md`**. Phase 5 is opt
 | Loop | Limit | Action when exceeded |
 |---|---|---|
 | Phase 1.5 revision loop | 5 revisions of v1 PLAN.md | Orchestrator escalates: accept-as-is or restart |
+| Phase 2 review-rejection cycle (either reviewer REJECTED) | 2 cycles | Halt and present options to the user |
 | Phase 4 cycle-back (CHANGES_REQUIRED) | 3 iterations | `escalation_requested`; user options |
 | Phase 1 REJECTED restart | 2 restarts | After 2nd, escalate |
 | Tech Architect MCP fetch | 2 retries per source | Ask user for alternative |
@@ -212,7 +228,7 @@ Both carry these fields:
 ```markdown
 project: {project-name}
 trace_id: {uuid}
-scenario_version: 1.3
+scenario_version: 1.4
 plan_version: v{n}
 status: {STATUS}
 last_updated: {ISO 8601}
@@ -261,9 +277,10 @@ Run after every subagent phase, before next dispatch.
 
 | Check | What to verify |
 |---|---|
-| Role match | Latest `debug.json` event has `agent` = dispatched role name (exact match) |
+| Role match *(single-agent phases: 1, 3, 4, 5)* | Latest `debug.json` event has `agent` = dispatched role name (exact match). *Not applicable after Phase 2 — two agents ran in parallel; use the "Phase 2 reviewer events" check instead.* |
 | Phase match | Latest event has `phase` = just-completed phase number |
 | Phase completion | Latest action is `phase_completed` (or a halt verb) |
+| **Phase 2 reviewer events (v1.4 — replaces Role/Phase/Completion checks after Phase 2)** | Both `hoe_events.json` and `qa_events.json` exist and each contains `precondition_check_passed` and `phase_completed`. The Orchestrator (sole `debug.json` writer in Phase 2) then folds both event files into `debug.json` in timestamp order and deletes the side files (or marks them as merged). |
 | Status header | The relevant file's status (per table above) reflects expected post-phase value |
 | Required outputs | All declared output files exist and are non-empty |
 | **No script artifacts** | `/tmp/` and the working directory contain no `.py`, `.sh`, or other script files written by the agent during the phase |
@@ -278,6 +295,10 @@ Failure → log `validation_error`, halt, report.
 
 Latest event in `debug.json` is the resume pointer. `phase_completed` → dispatch next; `phase_blocked` / `phase_failed` → user intervention; mid-phase or mid-gate → re-present and wait. **Always reuse `trace_id`.**
 
+### `status` Command (NEW in 1.4)
+
+At any gate — and as a response to any user message while the cycle is paused — a user message of `status` means: the Orchestrator reports the current phase, the active file's RFC status header value, and the last `debug.json` event, then **re-presents the pending gate** and ends its turn. `status` is NEVER a routing/approval signal and is NOT logged as a decision event.
+
 ---
 
 ## Debug & Logging Contract
@@ -287,6 +308,7 @@ Latest event in `debug.json` is the resume pointer. `phase_completed` → dispat
 * **Creation:** Phase 1 (Tech Architect) initializes `docs/debug.json`, recording `scenario_version`.
 * **`trace_id`:** UUID v4 from Phase 1.
 * **Ownership:** Append-only. (No append primitive exists — `Read` the file, push the new event onto `events`, `Write` the whole file back, keeping it valid JSON.)
+* **Phase 2 exception (NEW in 1.4):** during Phase 2, the Orchestrator is the SOLE `debug.json` writer. HoE and QA do NOT write `debug.json` — each appends its events to its own file (`docs/rfcs/{project-name}/hoe_events.json` and `docs/rfcs/{project-name}/qa_events.json`, same event schema). After both `Task` calls return, the Orchestrator folds both event files into `debug.json` in timestamp order during Inter-Phase Validation, then deletes the side files (or marks them as merged). This eliminates the concurrent whole-file read-modify-write lost-update race.
 
 ### Event Schema
 
@@ -298,7 +320,7 @@ Latest event in `debug.json` is the resume pointer. `phase_completed` → dispat
   "action": "see verbs below",
   "skills": ["..."],
   "metadata": {
-    "scenario_version": "1.3",
+    "scenario_version": "1.4",
     "mcp_called": false,
     "file": "...",
     "sources": ["..."],
@@ -320,7 +342,7 @@ Latest event in `debug.json` is the resume pointer. `phase_completed` → dispat
 }
 ```
 
-> **New in 1.3:** `metadata.user_message_verbatim` is REQUIRED on every event that records a user decision (`initial_review_approved`, `initial_review_revision_requested`, `initial_review_rejected`, `implementation_invoked`, `implementation_skipped`, `revision_requested`). It contains the user's literal message text. If you cannot fill this field with a real user message, you must not log the event.
+> **New in 1.3:** `metadata.user_message_verbatim` is REQUIRED on every event that records a user decision (`initial_review_approved`, `initial_review_revision_requested`, `initial_review_rejected`, `implementation_invoked`, `implementation_skipped`, `revision_requested`; v1.4 adds `task_approved`). It contains the user's literal message text. If you cannot fill this field with a real user message, you must not log the event.
 
 ### Universal Action Verbs
 
@@ -330,16 +352,18 @@ Latest event in `debug.json` is the resume pointer. `phase_completed` → dispat
 
 | Phase | Allowed actions |
 |---|---|
-| 1 (Normal) | `cycle_initialized`, `prd_fetched`, `prd_snapshot_saved`, `architecture_summary_presented`, `draft_finalized`, `status_updated`, `phase_completed`, `phase_aborted` |
+| 1 (Normal) | `cycle_initialized`, `prd_fetched`, `prd_snapshot_saved`, `prd_quality_checked`, `draft_finalized`, `status_updated`, `phase_completed`, `phase_aborted` |
 | 1 (Revision) | `revision_request_received`, `revision_plan_presented`, `revision_applied`, `status_updated`, `phase_completed` |
 | 1.5 | `initial_review_presented`, `initial_review_approved`, `initial_review_revision_requested`, `initial_review_rejected`, `status_updated` |
-| 2 | `precondition_check_passed`, `review_started`, `test_cases_created` *(QA only)*, `plan_validated` *(QA only)*, `review_completed`, `phase_completed` |
+| 2 | `precondition_check_passed`, `review_started`, `test_cases_created` *(QA only)*, `plan_validated` *(QA only)*, `review_completed` *(carries `metadata.review_status`)*, `phase_completed` — **written to the reviewer's own event file (`hoe_events.json` / `qa_events.json`), never to `debug.json`** |
 | 3 | `precondition_check_passed`, `consolidation_started`, `conflict_resolution_applied`, `status_updated`, `consolidation_completed`, `phase_completed` |
 | 4 | `precondition_check_passed`, `security_review_started`, `security_review_completed`, `status_updated`, `phase_completed` |
 | 4.5 | `handoff_presented`, `implementation_invoked`, `implementation_skipped`, `revision_requested`, `escalation_requested` |
-| 5 | `precondition_check_passed`, `implementation_started`, `task_proposed`, `task_approved`, `task_completed`, `cycle_paused`, `status_updated` |
+| 5 (Orchestrator only) | `task_proposed`, `task_approved` |
+| 5 (Implementor) | `precondition_check_passed`, `implementation_started`, `task_started`, `task_completed`, `cycle_paused`, `status_updated` |
 
-> Note: `precondition_check_passed` is new in 1.3 and is logged by each post-gate subagent (HoE, QA, Merger, Infosec, Implementor) as their first event after verifying the upstream gate's approval event exists.
+> Note: `precondition_check_passed` is logged by each post-gate subagent (HoE, QA, Merger, Infosec, Implementor) as their first event after verifying the upstream gate's approval event exists. In Phase 2 (v1.4), HoE and QA log it to their own event files, not to `debug.json`.
+> `task_proposed` / `task_approved` are logged by the **Orchestrator only** (Phase 5 gates). The Implementor logs `task_started` / `task_completed` directly to `debug.json` — it is the sole agent in Phase 5, so there is no write race.
 
 ### Self-Identification Rule
 
@@ -363,17 +387,17 @@ Established at start of Phase 1: explicit user input → PRD-derived → prompte
 1. Initialize cycle artifacts (project name, RFC directory, `debug.json`).
 2. Fetch PRD (retry budget: 2 per source).
 3. Save `prd_snapshot.md`. Log `prd_snapshot_saved`.
-4. Design architecture.
-5. Map every PRD requirement.
-6. Internal Gate: present architecture summary; wait for Approve / Reject / Changes. No auto-proceed.
-7. Draft RFC and save to `PLAN.md` with `status: DRAFT`.
+4. **PRD Quality Check (NEW in 1.4):** before designing, scan the PRD for contradictions, missing acceptance criteria, and vague requirements. Critical ambiguities become clarifying questions listed at the top of the Phase 1.5 hand-back (and `TBD:` entries in the draft's Open Questions) so the user resolves them at the gate. No new gate — this rides the existing Phase 1.5 presentation.
+5. Design architecture.
+6. Map every PRD requirement.
+7. Draft RFC and save to `PLAN.md` with `status: DRAFT`. *(No internal approval gate — subagents have no user turns. The architect completes the draft and hands back; the ONLY Phase-1 review is the Orchestrator-owned Phase 1.5 gate.)*
 8. Update status to `AWAITING_USER_REVIEW`.
 
 ### Steps (Revision Mode — re-dispatched from Phase 1.5)
 
 R1. Read user feedback from `metadata.user_feedback` of latest Orchestrator event.
 R2. Map feedback to specific PLAN.md sections.
-R3. Internal Gate: present revision plan; wait.
+R3. Compose a revision plan — it goes into the hand-back message, NOT an internal gate (subagents cannot wait for user input).
 R4. Apply changes to PLAN.md in place. Status stays `AWAITING_USER_REVIEW`. Increment `revision_iteration`.
 
 ### Output
@@ -384,7 +408,7 @@ R4. Apply changes to PLAN.md in place. Status stays `AWAITING_USER_REVIEW`. Incr
 
 ### Hand-back
 
-Tech Architect logs `phase_completed` and stops. Orchestrator validates, then presents Phase 1.5 **and ends its turn**.
+Tech Architect logs `phase_completed` and stops. The hand-back message lists any PRD Quality Check clarifying questions at the top (in Revision Mode, it carries the revision plan). Orchestrator validates, surfaces the clarifying questions in the Phase 1.5 presentation, then presents Phase 1.5 **and ends its turn**.
 
 ---
 
@@ -432,6 +456,7 @@ Waiting for your response.
 | `approve`, `looks good`, `lgtm`, `proceed`, `go ahead` | Phase 2 | Log `initial_review_approved`. Update `PLAN.md` status: `AWAITING_USER_REVIEW` → `UNDER_REVIEW`. Dispatch HoE and QA in parallel (two `Task` calls, one turn). | user's literal message |
 | `change:`, `revise:`, `update:`, or feedback after a change verb | Tech Architect Revision Mode | Log `initial_review_revision_requested` with `metadata.user_feedback` set to text after `change:`. Re-dispatch Tech Architect. | user's literal message |
 | `reject`, `abort`, `cancel`, `stop the cycle` | Cycle ends | Log `initial_review_rejected`. Update `PLAN.md` status: `AWAITING_USER_REVIEW` → `REJECTED_BY_USER`. | user's literal message |
+| `status` | Stay at gate | Report current phase, RFC status header value, last `debug.json` event; re-present this gate and end turn. NOT a routing signal; NOT logged as a decision event. | n/a |
 | Anything else (ambiguous) | Ask once | Output a clarification request and end turn again. Do NOT default to approve. | n/a |
 
 ### Forbidden behaviors
@@ -448,6 +473,15 @@ Waiting for your response.
 
 **Subagents:** `hoe` (Head of Engineering) + `qa-gatekeeper` (QA Gatekeeper), dispatched in parallel.
 
+### Event Logging (NEW in 1.4 — no debug.json writes by reviewers)
+
+During Phase 2, HoE and QA do **NOT** write `debug.json` (two concurrent whole-file read-modify-write writers = lost updates). Instead:
+
+* HoE appends every event to `docs/rfcs/{project-name}/hoe_events.json` (same event schema as `debug.json`).
+* QA appends every event to `docs/rfcs/{project-name}/qa_events.json` (same event schema).
+* Reviewers READ `debug.json` (for the precondition check) but never write it.
+* After both `Task` calls return, the **Orchestrator** — the sole `debug.json` writer in Phase 2 — folds both event files into `debug.json` in timestamp order during Inter-Phase Validation, then deletes the side files (or marks them as merged).
+
 ### MANDATORY Precondition Check (both subagents, first action)
 
 Before reading `PLAN.md` or starting any review:
@@ -458,11 +492,11 @@ Before reading `PLAN.md` or starting any review:
 
 If either check fails:
 
-* Log `phase_blocked` with `metadata.failure_reason: "Phase 1.5 approval event missing or invalid. Cannot start Phase 2 without explicit user approval."`
+* Log `phase_blocked` (to the reviewer's OWN event file) with `metadata.failure_reason: "Phase 1.5 approval event missing or invalid. Cannot start Phase 2 without explicit user approval."`
 * Output: `BLOCKED: Phase 1.5 approval not found in debug.json. The Orchestrator must present the Initial Review Gate to the user and receive explicit approval before Phase 2 can begin.`
 * STOP. Do not proceed.
 
-If both checks pass: log `precondition_check_passed` and proceed with review.
+If both checks pass: log `precondition_check_passed` (to the reviewer's OWN event file) and proceed with review.
 
 ### Input
 
@@ -472,10 +506,21 @@ If both checks pass: log `precondition_check_passed` and proceed with review.
 ### Output
 
 * `hoe_review.md`, `test_cases.md`, `qa_review.md`
+* Each review file — and each reviewer's hand-back message — carries a verdict: `review_status: APPROVED | CHANGES_REQUIRED | REJECTED`
+* `hoe_events.json`, `qa_events.json` (folded into `debug.json` by the Orchestrator, then deleted/marked merged)
 
-### Hand-back
+### Hand-back & Verdict Routing (NEW in 1.4)
 
-Both agents log `phase_completed`. Orchestrator validates, dispatches Phase 3.
+Both agents log `phase_completed` (with `metadata.review_status`) to their own event file and stop. After both `Task` calls return, the Orchestrator:
+
+1. Folds `hoe_events.json` and `qa_events.json` into `debug.json` in timestamp order, then deletes the side files (or marks them as merged).
+2. Runs Inter-Phase Validation: both reviewer event files existed and each contained `precondition_check_passed` and `phase_completed`.
+3. Routes on the two verdicts:
+
+| Verdicts | Route |
+|---|---|
+| Both `APPROVED` or `CHANGES_REQUIRED` | Phase 3 as today — the Merger addresses the findings |
+| Either reviewer `REJECTED` (fatal architectural flaw) | Tech Architect Revision Mode, with BOTH review files passed as feedback. Budget: **2 review-rejection cycles**; after the 2nd, halt and present to the user. |
 
 ---
 
@@ -490,7 +535,7 @@ Before any consolidation work:
 
 1. Read `docs/debug.json`.
 2. Verify `initial_review_approved` event exists with valid `metadata.user_message_verbatim`.
-3. Verify both `hoe_review.md` and `qa_review.md` exist and the corresponding subagents logged `phase_completed`.
+3. Verify both `hoe_review.md` and `qa_review.md` exist and the folded reviewer events in `debug.json` include `phase_completed` from both reviewers.
 4. Verify `PLAN.md` status is `UNDER_REVIEW` (first run) or `PLAN_FINAL.md` status is `SECURITY_CHANGES_REQUIRED` (cycle-back).
 
 If any check fails: log `phase_blocked` with the specific reason and STOP. Otherwise: log `precondition_check_passed` and proceed.
@@ -504,8 +549,8 @@ If any check fails: log `phase_blocked` with the specific reason and STOP. Other
 
 1. Verify all input files present.
 2. Ingest all inputs.
-3. Resolve cross-reviewer conflicts via the tie-breaker skill — `Read` `.claude/skills/tie-breaker/SKILL.md` and apply R1/R2/R3/R4.
-4. Compose consolidated RFC content addressing all QA Coverage Matrix gaps and HoE findings.
+3. Resolve cross-reviewer conflicts via the tie-breaker skill — `Read` `~/.claude/skills/tie-breaker/SKILL.md` and apply R1/R2/R3/R4.
+4. Compose consolidated RFC content addressing all QA Coverage Matrix gaps and HoE findings. The HoE effort estimate lands in the `### Cost Estimation` subsection of `PLAN_FINAL.md`.
 5. **Write `PLAN_FINAL.md`** — single `Write` (or `Edit` on cycle-back) operation. `status: CONSOLIDATED_PENDING_SECURITY` set in the hidden machine-state block. This is the reader-facing RFC: it follows the **Mekari 7-section format** defined in `merger.md` §4 (Overview / Technical Design / High-Availability & Security / Backwards Compatibility and Rollout Plan / Concern, Questions, or Known Limitations / Tasks / Comment logs), led by a hidden `<!-- RFC-META -->` block and a visible metadata table. **Do NOT append a "Reviewer Findings Consolidated" section or a "Feedback Resolution Table" to the RFC** — those are process artifacts and make the RFC unreadable for stakeholders.
 6. **Write `merge_report.md`** — the audit trail. The Reviewer Findings Consolidated table, the Feedback Resolution Table, and tie-breaker citations live HERE, not in the RFC. (See `merger.md` Step 5.)
 7. Hand back.
@@ -520,7 +565,7 @@ If any check fails: log `phase_blocked` with the specific reason and STOP. Other
 
 ### Output
 
-* `PLAN_FINAL.md` (the clean reader-facing RFC — 12 body sections only, status `CONSOLIDATED_PENDING_SECURITY`)
+* `PLAN_FINAL.md` (the clean reader-facing RFC — the Mekari 7-section format per Step 5, status `CONSOLIDATED_PENDING_SECURITY`)
 * `merge_report.md` (the process audit trail — findings tables, feedback resolution, tie-breaker citations)
 
 ### Hand-back
@@ -539,7 +584,7 @@ Before reviewing:
 
 1. Read `docs/debug.json`.
 2. Verify `initial_review_approved` event exists with valid `metadata.user_message_verbatim`.
-3. Verify Merger logged `phase_completed` with `consolidation_completed` and `PLAN_FINAL.md` exists with status `CONSOLIDATED_PENDING_SECURITY`.
+3. Verify Merger logged `phase_completed` and its `metadata` notes consolidation complete, and `PLAN_FINAL.md` exists with status `CONSOLIDATED_PENDING_SECURITY`.
 
 If any check fails: log `phase_blocked` and STOP. Otherwise: log `precondition_check_passed` and proceed.
 
@@ -562,6 +607,7 @@ If any check fails: log `phase_blocked` and STOP. Otherwise: log `precondition_c
 | Architectural change | Phase 1 (Tech Architect → 2 → 3 → 4) | `PLAN.md` overwritten by Tech Architect; `PLAN_FINAL.md` overwritten by Merger after Phase 3 re-runs |
 | Localized fix | Phase 3 (Merger directly patches `PLAN_FINAL.md`) | `PLAN.md` untouched; `PLAN_FINAL.md` modified in place |
 | REJECTED | Phase 1 full restart | Both files overwritten; `trace_id` reused |
+| Phase 2 reviewer REJECTED (fatal architectural flaw — NEW in 1.4) | Tech Architect Revision Mode (→ 2 → 3 → 4), with both review files as feedback | `PLAN.md` revised in place; `PLAN_FINAL.md` untouched (does not exist yet on first pass). Budget: 2 review-rejection cycles, then halt and present to the user |
 
 Budget exceeded → escalation.
 
@@ -613,8 +659,9 @@ Waiting for your response.
 |---|---|---|---|
 | `implement`, `execute`, `build the code`, `start coding`, `run implementor`, or `implement T<n>` | Phase 5 | Log `implementation_invoked`. Dispatch Implementor. | user's literal message |
 | `revise:`, `change:`, or feedback after a revise verb | Phase 3 (Merger) | Log `revision_requested`. Re-dispatch Merger. | user's literal message |
-| `done`, `RFC only`, `stop here`, `we're done`, `thanks` | Cycle ends | Log `implementation_skipped`. Update `PLAN_FINAL.md` status to `CLOSED_RFC_ONLY`. | user's literal message |
-| Anything else (ambiguous) | Ask once | Output a clarification request and end turn. Do NOT default to implement. | n/a |
+| `done`, `RFC only`, `stop here`, `we're done` | Cycle ends | Log `implementation_skipped`. Update `PLAN_FINAL.md` status to `CLOSED_RFC_ONLY`. | user's literal message |
+| `status` | Stay at gate | Report current phase, RFC status header value, last `debug.json` event; re-present this gate and end turn. NOT a routing signal; NOT logged as a decision event. | n/a |
+| Anything else (ambiguous — including bare acknowledgements like `thanks` with no implementation or close verb) | Ask once | Output a clarification request and end turn. Do NOT default to implement. Closing the cycle requires an explicit phrase (`done`, `RFC only`, `stop here`, `we're done`). | n/a |
 
 ### Forbidden behaviors
 
@@ -649,11 +696,21 @@ If checks pass: log `precondition_check_passed` and proceed.
 
 * `PLAN_FINAL.md`, `infosec_review.md`, `test_cases.md`, user invocation phrase
 
-### Steps
+### Per-Task Gate Loop (NEW in 1.4 — the ORCHESTRATOR owns all Phase 5 gates)
 
-1. Implementor sets `PLAN_FINAL.md` status to `IN_IMPLEMENTATION`.
-2. Run per-task gated loop (Plan Intake → Pre-Task → Execute → Report → Decision).
-3. On full completion: status `IMPLEMENTED`.
+The Implementor cannot wait for user decisions — subagents have no user turns. All per-task approvals therefore live in the Orchestrator (main session):
+
+a. **Orchestrator presents the next task** to the user (taken from `PLAN_FINAL.md` §Tasks, or from the Implementor's previous hand-back proposal), logs `task_proposed`, and **🛑 ENDS TURN** per the human-gate turn-boundary mechanics. (`status` command applies at this gate too.)
+b. **(Next turn — only after the user responds)** On an approval message, the Orchestrator logs `task_approved` with `metadata.user_message_verbatim` (Anti-Fabrication Rule applies) and dispatches the Implementor for **THAT ONE TASK** only.
+c. **Implementor executes the single task**, logs `task_started` / `task_completed` directly to `debug.json` (it is the sole agent in Phase 5 — no write race), reports results, and hands back with the proposed next task.
+d. Repeat from (a) until all tasks meet DoD.
+
+`task_proposed` / `task_approved` are logged by the **Orchestrator only**. The Implementor logs `task_started` / `task_completed` (plus its other Phase 5 verbs).
+
+### Status Transitions
+
+1. On its first dispatch, Implementor sets `PLAN_FINAL.md` status to `IN_IMPLEMENTATION`.
+2. When all tasks meet DoD: status `IMPLEMENTED`.
 
 > **Phase 5 is the only phase where writing code is allowed.** Even here, Implementor does not write scripts to manipulate `PLAN_FINAL.md` itself.
 
@@ -663,7 +720,7 @@ If checks pass: log `precondition_check_passed` and proceed.
 
 ```text
                      ┌──────────────┐
-   User prompt  ───→ │ Orchestrator │  main session, follows rfc-orchestration (v1.3)
+   User prompt  ───→ │ Orchestrator │  main session, follows rfc-orchestrator (v1.4)
                      └──────┬───────┘
                             ▼
 
@@ -685,8 +742,13 @@ If checks pass: log `precondition_check_passed` and proceed.
   Phase 2: Task → hoe + Task → qa-gatekeeper (parallel, one turn)
              ├─ FIRST ACTION: precondition check (initial_review_approved must exist)
              ├─ if missing → phase_blocked, halt
-             └─ if ok → review_started → ... → phase_completed
-                                     ↓ [validation]
+             ├─ events → hoe_events.json / qa_events.json (reviewers NEVER write debug.json)
+             └─ if ok → review_started → ... → phase_completed (+ review_status verdict)
+                                     ↓ [Orchestrator folds event files into debug.json
+                                        in timestamp order, validates, routes on verdicts]
+              ├── both APPROVED / CHANGES_REQUIRED ─→ Phase 3
+              └── either REJECTED ─→ Tech Architect Revision Mode
+                                     (both review files as feedback; budget: 2 cycles)
 
   Phase 3: Task → merger
              ├─ FIRST ACTION: precondition check

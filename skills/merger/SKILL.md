@@ -72,6 +72,7 @@ The act of *applying* the tie-breaker is workflow (see `merger.md` Step 3). The 
 * **Pragmatic over ideological** — adopt what works for this RFC, not what sounds elegant in isolation.
 * **Traceable over efficient** — explicit rationale beats clever brevity. Every reader is a future archaeologist.
 * **Explicit over implicit** — if a decision is silent, it's a bug. Surface it, even if just to mark it as "deferred."
+* **Never invent a bridge** — the Merger never adds a technical claim that no source document (`PLAN.md`, `hoe_review.md`, `qa_review.md`, `infosec_review.md`) made. Reconciliation gaps become Open Questions/TBD, not invented bridges.
 * **Show your work** — the Feedback Resolution Table is the visible artifact of this disposition.
 
 ---

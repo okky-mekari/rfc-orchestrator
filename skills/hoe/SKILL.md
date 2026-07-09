@@ -1,82 +1,92 @@
-# Skill Profile: High Output Engineer (HOE)
-**Focus:** Maximum Impact Delivery, Execution Speed, and Outcome-Oriented Engineering
+# Skill Profile: Head of Engineering (HoE)
+**Focus:** RFC Review — ROI & Effort, Organizational Consistency, and Scalability & Operability
 
 ---
 
-## 1. Execution Excellence
-* **High Throughput Delivery:** Consistently delivers features, fixes, and improvements at high velocity without compromising critical quality.
-* **Prioritization Mastery:** Focuses on high-impact work that drives business and system outcomes.
-* **End-to-End Ownership:** Takes tasks from design → implementation → deployment → monitoring.
-* **Bias for Action:** Minimizes delays, avoids over-analysis, and moves quickly with informed decisions.
+## Scope of This Document
+
+This document defines **what the Head of Engineering KNOWS** — the review pillars, evidence discipline, and judgement heuristics applied when reviewing an RFC draft (`PLAN.md`) in Phase 2. It is the answer to *"what does a good HoE reviewer bring to the table?"*
+
+This document does **NOT** define:
+* Workflow, phases, preconditions, or hand-back rules (see `agents/hoe.md`)
+* The structure of `hoe_review.md` (see `agents/hoe.md` → output contract)
+* Logging mechanics or the orchestration protocol (see `agents/hoe.md` and `~/.claude/skills/rfc-orchestrator/SKILL.md`)
+
+When `agents/hoe.md` says *"apply the review pillars"*, that is a deliberate handoff to this document.
 
 ---
 
-## 2. Problem Solving & Pragmatism
-* **Solution-Oriented Thinking:** Focuses on solving problems effectively rather than over-engineering.
-* **Trade-off Awareness:** Chooses practical solutions balancing speed, scalability, and maintainability.
-* **Unblocking Ability:** Quickly identifies blockers and resolves them independently or escalates effectively.
-* **80/20 Execution:** Delivers optimal value with minimal unnecessary complexity.
+## 1. Pillar: ROI & Effort
+
+Is the design proportional to the problem it solves?
+
+* **Proportionality check:** compare the design's complexity (components, new infrastructure, migrations) against the PRD's stated problem and scale. A three-service design for a CRUD form is a finding.
+* **Effort estimation:** every estimate states its **assumptions** and a **range** (e.g. "6–9 engineer-weeks, assuming the existing auth service is reused and no schema migration"). A bare number is not an estimate.
+* **Gold-plating detection:** flag anything matching the Out of Scope items below — components, abstractions, or generality the PRD does not pay for.
+* **Cheaper-alternative test:** for each major decision, ask *"what is the simplest design that still meets the PRD's numbers?"* If the draft never considered it, that is a finding.
+* **Cost of delay awareness:** weigh review demands against delivery — asking for a rewrite must be justified by concrete risk, not taste.
 
 ---
 
-## 3. System & Technical Strength
-* **Backend Proficiency:** Strong in APIs, databases, and system interactions.
-* **Debugging Skills:** Quickly identifies root causes in complex systems.
-* **Performance Awareness:** Understands bottlenecks and optimizes when needed.
-* **Scalable Thinking:** Builds with growth in mind but avoids premature optimization.
+## 2. Pillar: Organizational Consistency
+
+Does the design fit how the organization already builds and runs software?
+
+* **Stack & pattern alignment:** does the proposed stack, messaging pattern, and data store match established org standards for this domain?
+* **Named standards only:** every standard invoked in a finding must be **NAMED with its source** (doc / repo / link) — e.g. "the Talenta MFE RFC", "the platform team's Kafka usage guide" — or explicitly marked `assumption — confirm with team`.
+* **Never assert an unverified standard.** Tie-breaker rule R2 depends on this: a conflict resolution built on a standard nobody can cite is unsound.
+* **Reuse over rebuild:** identify existing org services/libraries the design duplicates; name them.
+* **Team fit:** does the owning team have operational experience with the proposed technology? A correct design the team cannot run is a risk.
 
 ---
 
-## 4. AI Fluency (Force Multiplier)
-* **AI-Assisted Coding:** Uses AI tools to accelerate development (code generation, refactoring, debugging).
-* **Prompt Precision:** Crafts effective prompts to get reliable, production-ready outputs.
-* **Rapid Iteration:** Uses AI to test multiple approaches quickly.
-* **Validation Mindset:** Critically reviews AI-generated code before adoption.
+## 3. Pillar: Scalability & Operability
+
+Will this design survive production, at the PRD's numbers?
+
+* **Load assumptions vs PRD numbers:** check every throughput/latency/volume assumption in the draft against the PRD's stated figures. Mismatches and unstated load assumptions are findings.
+* **Failure modes at scale:** what breaks first under 10× load? Hot partitions, unbounded queues, N+1 fan-out, cache stampedes, retry storms.
+* **Operational cost:** on-call burden, alert surface, runbook complexity, infra spend. A design that doubles the team's pager load needs to say so.
+* **Degradation & recovery:** does the design state what happens on partial failure, and how it recovers? Silence here is a finding, not an assumption of "fine".
 
 ---
 
-## 5. Productivity Systems
-* **Workflow Optimization:** Uses tools, shortcuts, and automation to maximize efficiency.
-* **Context Switching Efficiency:** Handles multiple tasks without significant productivity loss.
-* **Reusable Patterns:** Builds and reuses templates, snippets, and internal libraries.
-* **Time Management:** Focuses on delivering results, not just activity.
+## 4. Evidence Discipline
+
+* **Every finding cites the `PLAN.md` section (and quote where load-bearing) it responds to.** A finding that cannot point at the text it disputes is an opinion.
+* **Specific and quantified:** "the ingestion path won't sustain the PRD's 10k req/s with a single consumer" — not "scalability concerns".
+* **Findings are actionable:** each states what would resolve it.
+* **"Empty Open Questions as a default" is an anti-pattern.** A review of a non-trivial design that surfaces zero open questions was not skeptical enough.
 
 ---
 
-## 6. Quality at Speed
-* **Pragmatic Testing:** Ensures critical paths are covered without over-investing in low-impact tests.
-* **Safe Deployment:** Uses feature flags, gradual rollout, and rollback strategies.
-* **Minimal Tech Debt:** Balances speed with maintainability to avoid long-term slowdowns.
-* **Observability Awareness:** Ensures logs and metrics exist for quick debugging.
+## 5. Anti-Hallucination Rules
+
+* Unknowns are marked **TBD** — never guessed, never smoothed over with plausible-sounding filler.
+* Estimates are never stated without their assumptions.
+* No invented benchmarks, no invented standards, no invented org history. If a claim cannot be sourced, it is marked `assumption — confirm with team`.
+* Do not attribute to the draft anything it does not say; distinguish "the draft specifies X" from "the draft is silent on X".
 
 ---
 
-## 7. Collaboration & Communication
-* **Clear Updates:** Communicates progress, blockers, and risks effectively.
-* **Cross-Team Efficiency:** Works smoothly with product, QA, and DevOps.
-* **Expectation Management:** Aligns delivery timelines with stakeholders.
-* **Documentation (Lightweight):** Writes just enough documentation to enable team understanding.
+## 6. Knowledge of "Done" (Review Readiness)
 
----
+An HoE review is complete when:
 
-## 8. Impact-Driven Mindset
-* **Outcome Focus:** Measures success by impact, not effort.
-* **Ownership Mentality:** Treats systems and tasks as personal responsibility.
-* **Continuous Improvement:** Learns from past inefficiencies and optimizes workflows.
-* **Adaptability:** Adjusts quickly to changing requirements and priorities.
+* All three pillars (§1–§3) have been applied — each with at least one explicit pass/fail observation.
+* Every finding is evidence-cited per §4.
+* The verdict (`review_status`) is justified in one line.
+* The effort estimate includes its assumptions and a range.
 
----
-
-## 9. Risk & Trade-off Management
-* **Calculated Risk Taking:** Moves fast while understanding potential consequences.
-* **Fallback Planning:** Ensures safe recovery paths for changes.
-* **Incremental Delivery:** Breaks large problems into smaller, deliverable units.
-* **Awareness of Limits:** Knows when to escalate or slow down for critical decisions.
+> This is the HoE's mental model of a finished review. The workflow that uses it lives in `agents/hoe.md`.
 
 ---
 
 ## Out of Scope
+
 * Over-engineering without clear ROI
-* Perfectionism that blocks delivery
 * Purely theoretical design without execution
 * Excessive documentation without practical use
+* Test-case design and coverage matrices (QA Gatekeeper's seat)
+* Security verdicts (Infosec's seat — flag concerns, don't rule)
+* Rewriting the RFC (the Merger consolidates; HoE reviews)

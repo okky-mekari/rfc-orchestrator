@@ -127,17 +127,24 @@ If RFC does not specify:
 
 ### Severity Levels
 
-* **Critical**
+Severity = **impact × likelihood**: a devastating outcome that requires an improbable chain of failures may rank below a moderate outcome that any anonymous user can trigger today.
 
-  * system compromise possible
+* **Critical** — direct compromise of data or auth at scale
 
-* **High**
+  * Examples: unauthenticated access to another tenant's data; secrets committed to the repo
 
-  * sensitive data exposure
+* **High** — exploitable weakness with meaningful blast radius
 
-* **Medium**
+  * Examples: missing authorization check on a single endpoint; PII written to logs
 
-  * limited impact
+* **Medium** — hardening gap with limited impact
+
+  * Examples: missing rate limit on a non-sensitive endpoint; verbose error message without sensitive data
+
+### Grounding
+
+* Every finding cites the RFC section it arises from.
+* No invented CVEs or compliance obligations — verify (WebSearch) or mark `unverified`.
 
 ---
 

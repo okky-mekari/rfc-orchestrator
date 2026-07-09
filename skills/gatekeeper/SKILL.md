@@ -31,6 +31,12 @@ When workflow rules in `qa-gatekeeper.md` say *"apply standard QA reasoning"* or
 * **Test Case Design:** Creates and reviews high-quality, maintainable test cases — including scenario-level acceptance tests derived directly from a PRD.
 * **PRD-to-Test Traceability:** Knows how to map every requirement statement to one or more verifiable test cases, so a missing test = a missed requirement.
 
+### Evidence & Grounding
+
+* Test cases derive **only from PRD text** — every case cites the PRD's own label/sentence verbatim (e.g. `US1`, "Candidate Index").
+* **No invented acceptance criteria.** If a criterion the PRD never states seems necessary, it becomes an Open Question — not a test.
+* Coverage claims cite the `PLAN.md` section that provides the coverage; a COVERED verdict without a cited section is unsubstantiated.
+
 ---
 
 ## 3. Automation & Efficiency

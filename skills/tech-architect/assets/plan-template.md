@@ -1,7 +1,7 @@
 ---
 project: {project-name}
 trace_id: {uuid}
-scenario_version: 1.3
+scenario_version: 1.4
 plan_version: v1
 status: AWAITING_USER_REVIEW
 last_updated: {ISO 8601}
@@ -33,7 +33,7 @@ last_updated_by: Tech Architect
 | {{e.g. US1 — Candidate Index}} | F | {{e.g. the search service / the API Design section}} | {{}} |
 | {{e.g. US2 — Bulk Import}} | NF | {{e.g. the ingestion worker / the Infrastructure section}} | {{}} |
 
-Non-functional targets (numbers, not adjectives — see style-guide):
+Non-functional targets (numbers, not adjectives — see style-guide; TBD if unknown — never invent):
 
 | Property | Target |
 |----------|--------|
@@ -95,6 +95,10 @@ Include a schema migration approach if this design touches existing data.
 - **Deployment model:** {{single deploy / staged / feature-flagged}}
 - **Scaling approach:** {{horizontal/vertical, autoscaling triggers}}
 - **Topology:** {{regions, availability zones, scaling units}}
+- **Rollout & rollback:** {{feature flag / staged % / rollback trigger}}
+- **Observability:** {{monitoring, alerting, logging — what signals prove it works}}
+- **Cost estimate:** {{infra + effort drivers; `TBD:` if unknown}}
+- **Security posture:** {{authn/z model, data classification, tenant isolation}}
 
 ## 7. Trade-offs & Alternatives
 
@@ -118,7 +122,7 @@ Include a schema migration approach if this design touches existing data.
 
 ## 9. Risks & Mitigations
 
-> Minimum 3 risks. Each with impact, likelihood, and mitigation.
+> Minimum 3 risks for non-trivial designs (small changes: list what's real, don't pad). Each with impact, likelihood, and mitigation.
 
 | # | Risk | Impact | Likelihood | Mitigation |
 |---|------|--------|------------|------------|
