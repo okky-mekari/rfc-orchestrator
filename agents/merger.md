@@ -84,7 +84,7 @@ The machine-state block is an **HTML comment** so stakeholders never see `trace_
 <!-- RFC-META (machine state — do not render; orchestrator reads/writes the status: line here)
 project: {project-name}
 trace_id: {uuid}
-scenario_version: 1.4
+scenario_version: 1.5
 plan_version: v1
 status: CONSOLIDATED_PENDING_SECURITY
 last_updated: {ISO 8601}
@@ -163,7 +163,7 @@ Append to `docs/debug.json`. Every event MUST set `agent: "Merger"`.
 |`phase`                     |`3`                                                        |
 |`action`                    |one of the verbs above                                     |
 |`skills`                    |array of merger/tie-breaker section names applied          |
-|`metadata.scenario_version` |`1.4`                                                      |
+|`metadata.scenario_version` |`1.5`                                                      |
 |`metadata.file`             |`PLAN_FINAL.md` / `merge_report.md`                        |
 |`metadata.plan_version`     |`v1` (or vN on architectural cycle-back)                   |
 |`metadata.plan_status_after`|`CONSOLIDATED_PENDING_SECURITY` for `status_updated`       |
@@ -180,7 +180,7 @@ Append to `docs/debug.json`. Every event MUST set `agent: "Merger"`.
   "action": "consolidation_completed",
   "skills": ["Conflict Resolution", "Tie-Breaker R1", "Tie-Breaker R3"],
   "metadata": {
-    "scenario_version": "1.4",
+    "scenario_version": "1.5",
     "file": "docs/rfcs/v2-custom-email-template/PLAN_FINAL.md",
     "plan_version": "v1",
     "cycle_iteration": 1,

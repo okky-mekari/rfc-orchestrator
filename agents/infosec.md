@@ -151,7 +151,7 @@ Append to `docs/debug.json`. Every event MUST set `agent: "Infosec Reviewer"`.
 |`phase`                                            |`4`                                                  |
 |`action`                                           |one of the verbs above                               |
 |`skills`                                           |array of infosec-skill section names applied         |
-|`metadata.scenario_version`                        |`1.4`                                                |
+|`metadata.scenario_version`                        |`1.5`                                                |
 |`metadata.mcp_called`                              |boolean                                              |
 |`metadata.file`                                    |`docs/rfcs/{project-name}/infosec_review.md`         |
 |`metadata.review_status`                           |`APPROVED` | `CHANGES_REQUIRED` | `REJECTED`         |
@@ -170,7 +170,7 @@ Append to `docs/debug.json`. Every event MUST set `agent: "Infosec Reviewer"`.
   "action": "security_review_completed",
   "skills": ["Threat Modeling", "AuthN/AuthZ Analysis", "Data Protection", "Dependency Risk"],
   "metadata": {
-    "scenario_version": "1.4",
+    "scenario_version": "1.5",
     "mcp_called": false,
     "file": "docs/rfcs/v2-custom-email-template/infosec_review.md",
     "review_status": "APPROVED",

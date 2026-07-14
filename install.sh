@@ -31,8 +31,10 @@ fi
 cp "${KIT_DIR}"/agents/*.md "${AGENTS_DIR}/"
 cp -R "${KIT_DIR}"/skills/* "${SKILLS_DIR}/"
 
+agent_count="$(find "${KIT_DIR}/agents" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ')"
+skill_count="$(find "${KIT_DIR}/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
 echo "Installed:"
-echo "  6 agents  -> ${AGENTS_DIR}"
-echo "  8 skills  -> ${SKILLS_DIR}"
+echo "  ${agent_count} agents  -> ${AGENTS_DIR}"
+echo "  ${skill_count} skills  -> ${SKILLS_DIR}"
 echo
 echo "Start a new Claude Code session, then run: /rfc-orchestrator"

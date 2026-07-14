@@ -5,13 +5,17 @@ description: The full RFC development lifecycle orchestration protocol — PRD i
 
 # Scenario: RFC Development Cycle
 
-**scenario_version:** `1.4`
+**scenario_version:** `1.5`
 **Pinning:** the orchestrator records this `scenario_version` in the first `debug.json` event of every cycle.
 
 > Full lifecycle from PRD ingestion through security clearance.
 > Implementation is **opt-in** — the cycle's default deliverable is an approved RFC, not running code.
 >
-> **What's new in 1.4:**
+> **What's new in 1.5:**
+> * **Phase 0: Requirements Grilling (opt-in via `--grill`).** If — and only if — the user's cycle-start message contains the `--grill` flag, the Orchestrator runs an interactive requirements interview (the `grilling` skill) in the main session BEFORE dispatching Phase 1. One question per turn, recommended answer offered each time, facts looked up from the environment rather than asked. Output: `grilling_notes.md`. Without the flag, the cycle starts at Phase 1 exactly as in 1.4 — Phase 0 never runs by default.
+> * Phase 1 ingests `grilling_notes.md` when present: decisions recorded there are **settled** — the PRD Quality Check must not re-raise them as clarifying questions, and the draft cites them as `[GRILL-n]`. New Phase 1 verb: `grilling_notes_ingested`.
+>
+> **Carried over from 1.4:**
 > * **Phase 2 lost-update race fixed:** HoE and QA no longer write `debug.json`. Each appends to its own event file (`hoe_events.json` / `qa_events.json`); the Orchestrator — sole `debug.json` writer in Phase 2 — folds both into `debug.json` in timestamp order during Inter-Phase Validation.
 > * **Phase 2 verdicts:** each reviewer hands back `review_status: APPROVED | CHANGES_REQUIRED | REJECTED`. Either reviewer REJECTED → Tech Architect Revision Mode (budget: 2 review-rejection cycles).
 > * **Impossible internal subagent gates removed** (Phase 1 Step 6; Revision Mode R3) — subagents have no user turns; the only Phase-1 review is the Orchestrator-owned 1.5 gate.
@@ -135,6 +139,7 @@ Even if the Orchestrator fails to honor this rule, the subagents in Phases 2, 3,
 
 | Phase | Subagent file | Subagent `name` / Role name (`debug.json` `agent` field) | Runs |
 |---|---|---|---|
+| 0 (opt-in) | *no subagent — Orchestrator interviews in the main session (loads the `grilling` skill)* | `Orchestrator` | ONLY when the cycle-start message contains `--grill`; never by default |
 | 1 | `tech-architect.md` | `tech-architect` / `Tech Architect` | once per cycle, plus on Phase 1.5 revision request, plus on REJECTED restart / architectural cycle-back |
 | 1.5 | *no subagent — Orchestrator presents, then ENDS TURN* | `Orchestrator` | after every Phase 1 completion; loops until user approves or rejects |
 | 2a | `hoe.md` | `hoe` / `Head of Engineering` | once per cycle (re-runs on architectural cycle-back) |
@@ -174,6 +179,13 @@ Even if the Orchestrator fails to honor this rule, the subagents in Phases 2, 3,
 | Phase 4 returns CHANGES_REQUIRED (architectural) | Tech Architect overwrites with new draft (Phase 1 re-runs) | Merger overwrites when Phase 3 re-runs |
 | Phase 4 returns REJECTED | Tech Architect overwrites with new draft (Phase 1 full restart) | Merger overwrites or creates fresh |
 | User reviews and finds issue with `PLAN_FINAL.md` at Phase 4.5 ("revise") | Untouched | Re-dispatch Merger; modifies in place |
+
+### `docs/rfcs/{project-name}/grilling_notes.md` — Phase 0 decisions (only when `--grill` was used)
+
+* **Created by:** Orchestrator (Phase 0)
+* **Modified by:** no one after Phase 1 dispatch — frozen user input
+* **Read by:** Tech Architect (Phase 1 — decisions are settled, cited as `[GRILL-n]`); reviewers may cite it
+* Absent in a normal (non-`--grill`) cycle; its absence is not a validation failure.
 
 > History via git: every commit captures the file state. No `_archived.md` filesystem clutter.
 
@@ -228,7 +240,7 @@ Both carry these fields:
 ```markdown
 project: {project-name}
 trace_id: {uuid}
-scenario_version: 1.4
+scenario_version: 1.5
 plan_version: v{n}
 status: {STATUS}
 last_updated: {ISO 8601}
@@ -320,7 +332,7 @@ At any gate — and as a response to any user message while the cycle is paused 
   "action": "see verbs below",
   "skills": ["..."],
   "metadata": {
-    "scenario_version": "1.4",
+    "scenario_version": "1.5",
     "mcp_called": false,
     "file": "...",
     "sources": ["..."],
@@ -352,7 +364,7 @@ At any gate — and as a response to any user message while the cycle is paused 
 
 | Phase | Allowed actions |
 |---|---|
-| 1 (Normal) | `cycle_initialized`, `prd_fetched`, `prd_snapshot_saved`, `prd_quality_checked`, `draft_finalized`, `status_updated`, `phase_completed`, `phase_aborted` |
+| 1 (Normal) | `cycle_initialized`, `prd_fetched`, `prd_snapshot_saved`, `grilling_notes_ingested` *(only if Phase 0 ran)*, `prd_quality_checked`, `draft_finalized`, `status_updated`, `phase_completed`, `phase_aborted` |
 | 1 (Revision) | `revision_request_received`, `revision_plan_presented`, `revision_applied`, `status_updated`, `phase_completed` |
 | 1.5 | `initial_review_presented`, `initial_review_approved`, `initial_review_revision_requested`, `initial_review_rejected`, `status_updated` |
 | 2 | `precondition_check_passed`, `review_started`, `test_cases_created` *(QA only)*, `plan_validated` *(QA only)*, `review_completed` *(carries `metadata.review_status`)*, `phase_completed` — **written to the reviewer's own event file (`hoe_events.json` / `qa_events.json`), never to `debug.json`** |
@@ -373,7 +385,44 @@ Every event MUST set `agent` to the exact role name. Inter-Phase Validation catc
 
 ## Project Naming
 
-Established at start of Phase 1: explicit user input → PRD-derived → prompted. Fixed for cycle lifetime.
+Established at start of Phase 1: explicit user input → PRD-derived → prompted. Fixed for cycle lifetime. *(If Phase 0 runs, the name is established at the start of Phase 0 instead, using the same precedence, and carries into Phase 1.)*
+
+---
+
+## Phase 0: Requirements Grilling (opt-in — `--grill` flag only)
+
+**Subagent:** *none — Orchestrator (main session)* | **Role:** `Orchestrator`
+**Goal:** Resolve the PRD's decision tree with the user BEFORE the Tech Architect burns a drafting cycle on an under-specified PRD.
+
+### Trigger (strict)
+
+* Runs **only** when the user's cycle-start message contains the literal flag `--grill` (or an unambiguous natural-language equivalent such as `grill me first`).
+* **No flag → no Phase 0.** The Orchestrator dispatches Phase 1 directly, exactly as in v1.4. The Orchestrator MUST NOT infer that a vague PRD "deserves" grilling — absence of the flag is a routing decision, not a quality judgment.
+
+### Why the Orchestrator, not a subagent
+
+Grilling is inherently multi-turn interactive (one question per user turn). Subagents have no user turns — a dispatched subagent runs to completion and returns. Therefore Phase 0 runs in the main session, under the same turn-boundary discipline as the human gates.
+
+### Steps
+
+1. Establish the project name and create the RFC directory (`docs/rfcs/{project-name}/`).
+2. Load the `grilling` skill (`Read` `~/.claude/skills/grilling/SKILL.md` — skill loading is explicit).
+3. If a PRD source was provided, fetch/read it first so questions are grounded in the actual document. Look up any *fact* answerable from the environment (repo, Confluence, Figma) yourself; only *decisions* go to the user.
+4. Interview per the grilling protocol: **exactly one question per turn, with a recommended answer, then END THE TURN.** The same anti-fabrication discipline as the human gates applies — a user answer exists only if the user typed it.
+5. On exit (decision tree resolved, or user says `enough` / `stop grilling` / `proceed`), write `docs/rfcs/{project-name}/grilling_notes.md` in the `GRILL-n` format defined by the grilling skill.
+6. In the turn that receives the user's final answer/exit message, proceed to dispatch Phase 1, passing the absolute path of `grilling_notes.md` as an additional Input alongside the PRD source.
+
+### Output
+
+* `docs/rfcs/{project-name}/grilling_notes.md`
+
+### Logging note
+
+`debug.json` does not exist until Phase 1 initializes it, so Phase 0 logs no events. The audit artifact for Phase 0 is `grilling_notes.md` itself; the Tech Architect logs `grilling_notes_ingested` (Phase 1) as the bridge into the event stream.
+
+### Budget
+
+Max 15 questions. On hitting the budget, the Orchestrator writes the notes with `status: STOPPED_EARLY`, lists remaining branches under `Unresolved`, and proceeds — unresolved branches become `TBD:` Open Questions in the draft, same as today.
 
 ---
 
@@ -387,7 +436,8 @@ Established at start of Phase 1: explicit user input → PRD-derived → prompte
 1. Initialize cycle artifacts (project name, RFC directory, `debug.json`).
 2. Fetch PRD (retry budget: 2 per source).
 3. Save `prd_snapshot.md`. Log `prd_snapshot_saved`.
-4. **PRD Quality Check (NEW in 1.4):** before designing, scan the PRD for contradictions, missing acceptance criteria, and vague requirements. Critical ambiguities become clarifying questions listed at the top of the Phase 1.5 hand-back (and `TBD:` entries in the draft's Open Questions) so the user resolves them at the gate. No new gate — this rides the existing Phase 1.5 presentation.
+3b. **Grilling notes ingestion (NEW in 1.5, only when the dispatch prompt provides a `grilling_notes.md` path):** `Read` the notes and log `grilling_notes_ingested`. Every `GRILL-n` decision is **settled user input** — treat it with the same authority as the PRD itself, and cite it in the draft as `[GRILL-n]`.
+4. **PRD Quality Check (NEW in 1.4):** before designing, scan the PRD for contradictions, missing acceptance criteria, and vague requirements. Critical ambiguities become clarifying questions listed at the top of the Phase 1.5 hand-back (and `TBD:` entries in the draft's Open Questions) so the user resolves them at the gate. No new gate — this rides the existing Phase 1.5 presentation. **(1.5)** Ambiguities already resolved by a `GRILL-n` decision are NOT re-raised as clarifying questions — cite the decision instead.
 5. Design architecture.
 6. Map every PRD requirement.
 7. Draft RFC and save to `PLAN.md` with `status: DRAFT`. *(No internal approval gate — subagents have no user turns. The architect completes the draft and hands back; the ONLY Phase-1 review is the Orchestrator-owned Phase 1.5 gate.)*
@@ -720,11 +770,23 @@ d. Repeat from (a) until all tasks meet DoD.
 
 ```text
                      ┌──────────────┐
-   User prompt  ───→ │ Orchestrator │  main session, follows rfc-orchestrator (v1.4)
+   User prompt  ───→ │ Orchestrator │  main session, follows rfc-orchestrator (v1.5)
                      └──────┬───────┘
                             ▼
+              ┌── contains `--grill`? ──┐
+              │ yes                     │ no (default)
+              ▼                         │
+  Phase 0: Orchestrator (grilling)      │
+             ├─ one question/turn,      │
+             │  recommended answer,     │
+             │  🛑 END TURN each time   │
+             ├─ facts from environment, │
+             │  decisions from user     │
+             └─ → grilling_notes.md ────┤
+                                        ▼
 
   Phase 1: Task → tech-architect → PLAN.md (v1, status: AWAITING_USER_REVIEW)
+                                     (+ ingests grilling_notes.md if Phase 0 ran)
                                      prd_snapshot.md
                                      ↓ [validation]
 
@@ -782,6 +844,7 @@ d. Repeat from (a) until all tasks meet DoD.
 ## Hard Rules
 
 > 🚫 **No phase skipping.** Phase 1.5 and 4.5 gates cannot be skipped.
+> 🔥 **Phase 0 is flag-gated.** Grilling runs ONLY on an explicit `--grill` in the cycle-start message. No flag → straight to Phase 1; the Orchestrator never self-invokes grilling because a PRD "looks vague". During grilling: one question per turn, END TURN, never fabricate answers.
 > 🛑 **Human gates END THE TURN.** Presenting Phase 1.5 or 4.5 is the Orchestrator's final action of that turn. Dispatching the next phase in the same turn is a critical violation.
 > 🧑‍✈️ **The Orchestrator is the main session, not a subagent.** Human gates and `Task` dispatch both require it.
 > 🚷 **No fabricated decisions.** Never log `initial_review_approved`, `implementation_invoked`, or any user-decision event without a real user message containing the routing input in `metadata.user_message_verbatim`.

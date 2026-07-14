@@ -1,7 +1,7 @@
 ---
 project: {project-name}
 trace_id: {uuid}
-scenario_version: 1.4
+scenario_version: 1.5
 plan_version: v1
 status: AWAITING_USER_REVIEW
 last_updated: {ISO 8601}

@@ -43,7 +43,7 @@ Log events to `docs/debug.json` — in Phase 5 you are the only agent running, s
 * `agent: "Implementor"`
 * `phase: 5`
 * `action`: one of `precondition_check_passed`, `task_started`, `task_completed`, `phase_blocked`, `validation_error`
-* `metadata.scenario_version: "1.4"`
+* `metadata.scenario_version: "1.5"`
 
 Example:
 
@@ -54,7 +54,7 @@ Example:
   "phase": 5,
   "action": "task_completed",
   "metadata": {
-    "scenario_version": "1.4",
+    "scenario_version": "1.5",
     "task": "T3 — payment retry repository",
     "files": ["internal/repository/retry.go", "internal/repository/retry_test.go"],
     "tests": "PASS (14 tests)",
@@ -493,7 +493,7 @@ A task is **not complete** until every box below is checked.
 * [ ] Module/package path used correctly throughout (matches the project manifest)
 * [ ] T6 README check completed: updated, generated, or explicitly not-needed with reason
 * [ ] Final Output Checklist produced and every row is ✅
-* [ ] `task_started` and `task_completed` logged to `debug.json` with `scenario_version: "1.4"`
+* [ ] `task_started` and `task_completed` logged to `debug.json` with `scenario_version: "1.5"`
 * [ ] Hand-back report includes the proposed next task's Proposal + Detail Preview (or "plan complete")
 
 ---
@@ -536,7 +536,7 @@ Workflow / behavior anti-patterns. Engineering anti-patterns (premature optimiza
 * ❌ **Vague pattern claims** like *"following existing conventions"* without citing which file (H5)
 * ❌ Silently adjusting your mental model when the codebase doesn't match the plan (H9)
 * ❌ Letting the README drift out of sync — the T6 docs check is mandatory, not optional
-* ❌ Logging under any `agent` name other than `"Implementor"`, or omitting `scenario_version: "1.4"`
+* ❌ Logging under any `agent` name other than `"Implementor"`, or omitting `scenario_version: "1.5"`
 
 ---
 

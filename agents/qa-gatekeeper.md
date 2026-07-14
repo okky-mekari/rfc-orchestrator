@@ -178,7 +178,7 @@ review_status: APPROVED | CHANGES_REQUIRED | REJECTED
 |`phase`                    |`2`                                                                |
 |`action`                   |one of the verbs above                                             |
 |`skills`                   |array of gatekeeper-skill section names applied                    |
-|`metadata.scenario_version`|`1.4`                                                              |
+|`metadata.scenario_version`|`1.5`                                                              |
 |`metadata.mcp_called`      |boolean                                                            |
 |`metadata.file`            |output path when applicable                                        |
 |`metadata.plan_version`    |`v1` (or vN on cycle-back)                                         |
@@ -195,7 +195,7 @@ review_status: APPROVED | CHANGES_REQUIRED | REJECTED
   "action": "review_completed",
   "skills": ["Test Strategy & Coverage", "Performance & Reliability Validation", "Risk Management Mindset"],
   "metadata": {
-    "scenario_version": "1.4",
+    "scenario_version": "1.5",
     "mcp_called": false,
     "file": "docs/rfcs/v2-custom-email-template/qa_review.md",
     "plan_version": "v1",

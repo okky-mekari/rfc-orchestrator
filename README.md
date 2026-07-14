@@ -3,10 +3,10 @@
 A multi-agent RFC development pipeline for [Claude Code](https://claude.com/claude-code). It takes a PRD and drives it through architectural design, parallel engineering + QA review, synthesis, and a security gate — with human approval checkpoints — producing a consolidated, implementation-ready RFC (`PLAN_FINAL.md`). Optionally, it can then implement the plan.
 
 ```
-PRD ──▶ Phase 1        Phase 1.5   Phase 2 (parallel)   Phase 3     Phase 4    Phase 4.5   Phase 5
-        tech-architect  ── YOU ──▶  hoe                  merger      infosec    ── YOU ──▶  implementor
-        drafts PLAN.md   review     qa-gatekeeper        PLAN_FINAL  security    approve    (optional)
-                                    review in parallel   .md         gate                   build
+        Phase 0 (--grill only)   Phase 1        Phase 1.5   Phase 2 (parallel)   Phase 3     Phase 4    Phase 4.5   Phase 5
+PRD ──▶ requirements interview ▶ tech-architect  ── YOU ──▶  hoe                  merger      infosec    ── YOU ──▶  implementor
+        ── YOU ── one question   drafts PLAN.md   review     qa-gatekeeper        PLAN_FINAL  security    approve    (optional)
+        per turn, opt-in                                     review in parallel   .md         gate                   build
 ```
 
 ## What's inside
@@ -22,6 +22,7 @@ agents/                  Subagent definitions  → install to ~/.claude/agents/
 
 skills/                  Skills  → install to ~/.claude/skills/
   rfc-orchestrator/      The pipeline protocol — the /rfc-orchestrator entry point
+  grilling/              Phase 0 (opt-in via --grill) — relentless requirements interview, one question per turn
   tech-architect/        Architect profile + ADR / C4 / plan templates + decision rubric
   hoe/                   Head of Engineering review profile
   gatekeeper/            QA gatekeeper review profile
@@ -64,11 +65,18 @@ In a Claude Code session inside the project repo you want the RFC for:
 /rfc-orchestrator
 ```
 
-Provide your PRD when asked (a file path or pasted content). The orchestrator then runs the pipeline:
+Provide your PRD when asked (a file path or pasted content). To have the orchestrator interview you about the PRD's open decisions *before* any drafting starts, add the `--grill` flag:
+
+```
+/rfc-orchestrator <PRD link or path> --grill
+```
+
+The orchestrator then runs the pipeline:
 
 | Phase | Actor | Output |
 |---|---|---|
-| 1 — Design | `tech-architect` | `PLAN.md` (architecture draft, decision rationale) |
+| 0 — Grilling (opt-in, `--grill` only) | **you** + orchestrator | `grilling_notes.md` — settled `GRILL-n` decisions with PRD-level authority |
+| 1 — Design | `tech-architect` | `PLAN.md` (architecture draft, decision rationale; cites `[GRILL-n]`) |
 | 1.5 — Draft review | **you** | approve / request changes (gated) |
 | 2 — Review | `hoe` + `qa-gatekeeper` in parallel | engineering review + QA review with scenario-level test cases |
 | 3 — Synthesis | `merger` | `PLAN_FINAL.md` + `merge_report.md` (audit trail); conflicts resolved via tie-breaker rules |
@@ -77,6 +85,8 @@ Provide your PRD when asked (a file path or pasted content). The orchestrator th
 | 5 — Implement (optional) | `implementor` | code implementing the plan |
 
 Commands you can use at the gates and during the run: `approve`, `reject`, `change <feedback>`, `status`, `abort` (the full event list is documented in `skills/rfc-orchestrator/SKILL.md`).
+
+**How grilling works (Phase 0):** strictly flag-gated — no `--grill`, no interview, ever. The orchestrator asks exactly one question per turn, always with a recommended answer you can accept with a short `yes`/`rec`. Facts it can look up itself (repo, schema, existing behavior) it never asks; only genuine decisions reach you. Exit anytime with `enough` / `stop grilling` / `proceed` (budget: 15 questions). Decisions land in `grilling_notes.md` as `GRILL-n` entries that the architect must honor and cite — they're never re-asked as clarifying questions later in the cycle.
 
 All outputs land in your project's working directory, so they can be committed alongside your code.
 

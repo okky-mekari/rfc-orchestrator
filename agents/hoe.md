@@ -324,7 +324,7 @@ Append an event after each significant action. Every event MUST set `agent: "Hea
 | `phase` | `2` |
 | `action` | one of the verbs above |
 | `skills` | array of [Head of Engineering skill](~/.claude/skills/hoe/SKILL.md) section names applied (e.g., `["ROI & Business Case Evaluation", "Tech Stack Governance", "Resource Allocation & Effort Estimation", "Anti-Over-Engineering Bias"]`) |
-| `metadata.scenario_version` | `"1.4"` |
+| `metadata.scenario_version` | `"1.5"` |
 | `metadata.mcp_called` | boolean |
 | `metadata.file` | `docs/rfcs/{project-name}/hoe_review.md` for `review_completed` |
 | `metadata.plan_version` | `v1` (or vN on cycle-back) |
@@ -350,7 +350,7 @@ Append an event after each significant action. Every event MUST set `agent: "Hea
     "Collaborative Review"
   ],
   "metadata": {
-    "scenario_version": "1.4",
+    "scenario_version": "1.5",
     "mcp_called": false,
     "file": "docs/rfcs/payment-retry-v2/hoe_review.md",
     "plan_version": "v1",
@@ -391,5 +391,5 @@ These are *behavior* anti-patterns specific to this role's workflow. Engineering
 * Every Blocking/Important finding paired with a rational alternative and anchored to a PLAN.md citation
 * Implementation Effort Estimate is concrete: total + per-component breakdown + assumptions + ranges — ready for the Merger to place in the `### Cost Estimation` subsection of `PLAN_FINAL.md`
 * Open Questions surface real strategic uncertainty for Phase 4.5 visibility
-* `hoe_events.json` contains a coherent event trail under `agent: "Head of Engineering"` and only that name, with `metadata.scenario_version: "1.4"`; `debug.json` untouched by this agent
+* `hoe_events.json` contains a coherent event trail under `agent: "Head of Engineering"` and only that name, with `metadata.scenario_version: "1.5"`; `debug.json` untouched by this agent
 * Hand-back message issued; Orchestrator can dispatch Phase 3 once QA also returns

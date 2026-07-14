@@ -1,7 +1,7 @@
 <!-- RFC-META (machine state — do not render; orchestrator reads/writes the status: line here)
 project: {project-name}
 trace_id: {uuid}
-scenario_version: 1.4
+scenario_version: 1.5
 plan_version: v1
 status: CONSOLIDATED_PENDING_SECURITY
 last_updated: {ISO 8601}
