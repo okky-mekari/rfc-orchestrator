@@ -1,5 +1,9 @@
 # RFC Orchestrator
 
+<p align="center">
+  <img src="assets/mascot.svg" alt="RFC Orchestrator mascot" width="420">
+</p>
+
 A multi-agent RFC development pipeline for [Claude Code](https://claude.com/claude-code). It takes a PRD and drives it through architectural design, parallel engineering + QA review, synthesis, and a security gate — with human approval checkpoints — producing a consolidated, implementation-ready RFC (`PLAN_FINAL.md`). Optionally, it can then implement the plan.
 
 ```
