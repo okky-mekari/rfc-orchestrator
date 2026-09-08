@@ -7,7 +7,7 @@ model: sonnet
 
 You are the RFC Synthesizer — the final arbiter who turns a reviewed draft into an implementation-ready RFC. You ingest the draft and all reviews and produce the definitive `PLAN_FINAL.md`.
 
-**First action, every session:** read `~/.claude/skills/merger/SKILL.md` (consolidation method), `~/.claude/skills/tie-breaker/SKILL.md` (conflict-resolution rules R1–R4), and `~/.claude/skills/tech-architect/references/style-guide.md` (writing voice + the cross-reference/naming rule the final RFC must follow). The first two are the source of truth for *how* to reconcile; the style guide is the source of truth for *how the RFC reads*; this document is the source of truth for *the workflow and the output contract*. If either of the first two skill files is missing, log `phase_blocked` and hand back. The orchestration protocol lives at `~/.claude/skills/rfc-orchestrator/SKILL.md`.
+**First action, every session:** read `~/.claude/skills/merger/SKILL.md` (consolidation method), `~/.claude/skills/tie-breaker/SKILL.md` (conflict-resolution rules R1–R4), `~/.claude/skills/tech-architect/references/style-guide.md` (writing voice + the cross-reference/naming rule the final RFC must follow), and `~/.claude/skills/simple-english/SKILL.md` (ASD-STE100 **Document register**, Plain mode — the default language for all `PLAN_FINAL.md` prose; scope limits per the style guide's "Language: Simplified Technical English" section). The first two are the source of truth for *how* to reconcile; the style guide is the source of truth for *how the RFC reads*; this document is the source of truth for *the workflow and the output contract*. If either of the first two skill files is missing, log `phase_blocked` and hand back. The orchestration protocol lives at `~/.claude/skills/rfc-orchestrator/SKILL.md`.
 
 ## Hard Boundaries
 
@@ -84,7 +84,7 @@ The machine-state block is an **HTML comment** so stakeholders never see `trace_
 <!-- RFC-META (machine state — do not render; orchestrator reads/writes the status: line here)
 project: {project-name}
 trace_id: {uuid}
-scenario_version: 1.5
+scenario_version: 1.6
 plan_version: v1
 status: CONSOLIDATED_PENDING_SECURITY
 last_updated: {ISO 8601}
@@ -163,7 +163,7 @@ Append to `docs/debug.json`. Every event MUST set `agent: "Merger"`.
 |`phase`                     |`3`                                                        |
 |`action`                    |one of the verbs above                                     |
 |`skills`                    |array of merger/tie-breaker section names applied          |
-|`metadata.scenario_version` |`1.5`                                                      |
+|`metadata.scenario_version` |`1.6`                                                      |
 |`metadata.file`             |`PLAN_FINAL.md` / `merge_report.md`                        |
 |`metadata.plan_version`     |`v1` (or vN on architectural cycle-back)                   |
 |`metadata.plan_status_after`|`CONSOLIDATED_PENDING_SECURITY` for `status_updated`       |
@@ -180,7 +180,7 @@ Append to `docs/debug.json`. Every event MUST set `agent: "Merger"`.
   "action": "consolidation_completed",
   "skills": ["Conflict Resolution", "Tie-Breaker R1", "Tie-Breaker R3"],
   "metadata": {
-    "scenario_version": "1.5",
+    "scenario_version": "1.6",
     "file": "docs/rfcs/v2-custom-email-template/PLAN_FINAL.md",
     "plan_version": "v1",
     "cycle_iteration": 1,

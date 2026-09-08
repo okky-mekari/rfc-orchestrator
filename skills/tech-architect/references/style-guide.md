@@ -2,6 +2,26 @@
 
 How to write, not what to write. The templates in `assets/` define structure.
 
+## Language: Simplified Technical English (ASD-STE100) — the default
+
+All RFC prose (`PLAN.md`, `PLAN_FINAL.md`) is written in the **Document register** of the `simple-english` skill. Before drafting, `Read` `~/.claude/skills/simple-english/SKILL.md` and apply its "The Document" rules; consult `~/.claude/skills/simple-english/references/word-swaps.md` for plain replacements of overused words.
+
+The load-bearing rules, restated:
+
+- Procedural text: imperative mood, max 20 words per sentence, one instruction per sentence. Descriptive text: simple tenses, max 25 words per sentence, one topic per paragraph.
+- Active voice; simple tenses only (no present perfect); name the actor.
+- Modals: **can, will, must** only — never should, would, may, might, could.
+- One word, one meaning across the whole document. No contractions, no semicolons, no em-dashes.
+- Condition before command, with a comma: "If the build fails, read the log."
+- Define each concept term at first use, under ten words. Do not define product or standard names.
+- State the fact, not its importance — delete "robust", "seamlessly", "crucial", "in order to", "it is worth noting".
+
+**Scope limits (RFC pipeline specific):**
+
+- Apply the **Document register only**. The skill's "Reply" register (5-sentence chat limit) does NOT apply to hand-back messages, gate prompt blocks, `debug.json` events, or review files — those follow the orchestration protocol verbatim.
+- Never touch code, identifiers, Mermaid blocks, file paths, quoted errors, PRD labels (`US1`, "Candidate Index"), status headers, or template-mandated section names.
+- Strict STE vocabulary mode runs only when the user explicitly asks for STE compliance; the default is the Plain mode above.
+
 ## Voice
 
 - **Past tense for decisions made.** "We chose event sourcing because …"

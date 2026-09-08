@@ -5,13 +5,16 @@ description: The full RFC development lifecycle orchestration protocol — PRD i
 
 # Scenario: RFC Development Cycle
 
-**scenario_version:** `1.5`
+**scenario_version:** `1.6`
 **Pinning:** the orchestrator records this `scenario_version` in the first `debug.json` event of every cycle.
 
 > Full lifecycle from PRD ingestion through security clearance.
 > Implementation is **opt-in** — the cycle's default deliverable is an approved RFC, not running code.
 >
-> **What's new in 1.5:**
+> **What's new in 1.6:**
+> * **Default RFC language: ASD-STE100 Simplified Technical English (Plain mode).** All prose in `PLAN.md` and `PLAN_FINAL.md` follows the **Document register** of the `simple-english` skill (`~/.claude/skills/simple-english/SKILL.md`). The Orchestrator MUST include that skill path in the Phase 1 (Tech Architect) and Phase 3 (Merger) dispatch prompts — skill loading is explicit. Scope limits live in `~/.claude/skills/tech-architect/references/style-guide.md` → "Language: Simplified Technical English": Document register only; hand-back messages, gate prompt blocks, `debug.json`, and review files are NOT restyled; code, identifiers, Mermaid, PRD labels, and status headers are never touched. Strict STE vocabulary mode only on explicit user request.
+>
+> **Carried over from 1.5:**
 > * **Phase 0: Requirements Grilling (opt-in via `--grill`).** If — and only if — the user's cycle-start message contains the `--grill` flag, the Orchestrator runs an interactive requirements interview (the `grilling` skill) in the main session BEFORE dispatching Phase 1. One question per turn, recommended answer offered each time, facts looked up from the environment rather than asked. Output: `grilling_notes.md`. Without the flag, the cycle starts at Phase 1 exactly as in 1.4 — Phase 0 never runs by default.
 > * Phase 1 ingests `grilling_notes.md` when present: decisions recorded there are **settled** — the PRD Quality Check must not re-raise them as clarifying questions, and the draft cites them as `[GRILL-n]`. New Phase 1 verb: `grilling_notes_ingested`.
 >
@@ -240,7 +243,7 @@ Both carry these fields:
 ```markdown
 project: {project-name}
 trace_id: {uuid}
-scenario_version: 1.5
+scenario_version: 1.6
 plan_version: v{n}
 status: {STATUS}
 last_updated: {ISO 8601}
@@ -332,7 +335,7 @@ At any gate — and as a response to any user message while the cycle is paused 
   "action": "see verbs below",
   "skills": ["..."],
   "metadata": {
-    "scenario_version": "1.5",
+    "scenario_version": "1.6",
     "mcp_called": false,
     "file": "...",
     "sources": ["..."],
@@ -770,7 +773,7 @@ d. Repeat from (a) until all tasks meet DoD.
 
 ```text
                      ┌──────────────┐
-   User prompt  ───→ │ Orchestrator │  main session, follows rfc-orchestrator (v1.5)
+   User prompt  ───→ │ Orchestrator │  main session, follows rfc-orchestrator (v1.6)
                      └──────┬───────┘
                             ▼
               ┌── contains `--grill`? ──┐
